@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"gridas/config"
-
 	"labix.org/v2/mgo/bson"
 )
 
@@ -25,10 +23,6 @@ func TestConsumer(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
 
-	cfg, err := config.ReadConfig("gridas_test.json")
-	if err != nil {
-		t.Fatal(err)
-	}
 	reqChan := make(chan *Petition, cfg.QueueSize)
 	resultCh := make(chan *http.Request, 1)
 	errCh := make(chan error, 1)
@@ -110,10 +104,6 @@ func TestConsumerErrorResponse(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
 
-	cfg, err := config.ReadConfig("gridas_test.json")
-	if err != nil {
-		t.Fatal(err)
-	}
 	reqChan := make(chan *Petition, cfg.QueueSize)
 	resultCh := make(chan *http.Request, 1)
 	consumer := newTestConsumer(reqChan)

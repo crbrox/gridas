@@ -14,9 +14,10 @@ var (
 
 	petitionStoreTest, responseStoreTest, errorStoreTest *mgo.Collection
 )
+var cfg config.Config
 
 func setUp(t *testing.T) {
-	var cfg, err = config.ReadConfig("gridas_test.json")
+	cfg, err := config.ReadConfig("gridas_test.yaml")
 	if err != nil {
 		t.Fatal("setUp:", err)
 	}

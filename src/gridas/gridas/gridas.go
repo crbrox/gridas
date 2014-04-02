@@ -14,12 +14,15 @@ import (
 	"gridas/config"
 
 	"labix.org/v2/mgo"
+
+	"fmt"
 )
 
 func main() {
 
 	log.Println("Hello World!")
-	cfg, err := config.ReadConfig("gridas.json")
+	cfg, err := config.ReadConfig("gridas.yaml")
+	fmt.Println(cfg)
 	if err != nil {
 		log.Fatalln("-", err)
 	}
