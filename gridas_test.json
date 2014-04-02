@@ -1,0 +1,10 @@
+{
+"port": "8080",
+"queueSize": 100000,
+"consumers": 1000,
+"mongo": "localhost",
+"database": "gridas_test",
+"petitionsColl": "gridas_test_peticiones",
+"responsesColl": "gridas_test_respuestas",
+"errorsColl": "gridas_test_errores"
+}

@@ -1,0 +1,22 @@
+macbrox:e2e brox$ go test -bench "BenchmarkE2E.*" 
+
+BenchmarkE2EGetUnknownHost	 1000	   1350518 ns/op
+BenchmarkE2EGet	    		 1000	   1221759 ns/op
+BenchmarkE2ERoundGet	    	 1000	   1809461 ns/op
+ok  	gridas/e2e	6.057s
+BenchmarkE2EGetUnknownHost	 1000	   1281201 ns/op
+BenchmarkE2EGet	     		 2000      1229781 ns/op
+BenchmarkE2ERoundGet	         1000      2200121 ns/op
+ok  	gridas/e2e	7.676s
+
+macbrox:e2e brox$ echo "Con gridas"
+BenchmarkE2EGetUnknownHost	 5000	    652067 ns/op
+BenchmarkE2EGet	    		 5000	    596757 ns/op
+BenchmarkE2ERoundGet	   	 5000	    534861 ns/op
+ok  	gridas/e2e	9.711s
+BenchmarkE2EGetUnknownHost       5000	    643582 ns/op
+BenchmarkE2EGet	    		 5000	    486515 ns/op
+BenchmarkE2ERoundGet	         5000	    558962 ns/op
+ok  	gridas/e2e	9.186s
+macbrox:e2e brox$ 
+
