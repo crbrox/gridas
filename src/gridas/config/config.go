@@ -15,7 +15,7 @@ file for the type chosen
 package config
 
 import (
-	"encoding/json"
+	"gopkg.in/yaml.v1"
 	"io/ioutil"
 	"os"
 )
@@ -54,7 +54,7 @@ func ReadConfig(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(data, &cfg)
+	err = yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return nil, err
 	}
