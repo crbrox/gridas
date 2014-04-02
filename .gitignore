@@ -24,3 +24,6 @@ _testmain.go
 
 # coverage file
 cover.out
+
+pkg/
+bin/
