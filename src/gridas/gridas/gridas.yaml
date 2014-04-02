@@ -1,0 +1,11 @@
+port: 8080
+queuesize: 100000
+consumers: 2000
+mongo: localhost
+database: testtest
+petitionscoll: peticiones
+responsescoll: respuestas
+errorscoll: errores
+instance: A
+
+
