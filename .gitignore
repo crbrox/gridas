@@ -27,3 +27,8 @@ cover.out
 
 pkg/
 bin/
+
+.DS_Store
+
+src/gridas/gridas/gridas
+
