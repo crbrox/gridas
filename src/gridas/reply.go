@@ -11,7 +11,8 @@ import (
 //Reply represents the response from the target host
 type Reply struct {
 	//Reply id. Currently the same as the petition id
-	ID string `json:"id"`
+	ID      string `json:"id"`
+	TraceID string `json:"traceid"`
 	//Possible error in making the request. Could be ""
 	Error      string      `json:"error"`
 	StatusCode int         `json:"statuscode"` // e.g. 200
@@ -27,9 +28,9 @@ type Reply struct {
 	Done time.Time `json:"done"`
 }
 
-//newReply returns the Reply for the Petition made, the http.Response got and the possible error
+//newReply returns the Reply for the Petition made, the http.Response gotten and the possible error
 func newReply(resp *http.Response, p *Petition, e error) *Reply {
-	var reply = &Reply{ID: p.ID, Petition: p}
+	var reply = &Reply{ID: p.ID, Petition: p, TraceID: p.TraceID}
 	if e != nil {
 		reply.Error = e.Error()
 		return reply

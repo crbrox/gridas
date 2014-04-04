@@ -14,16 +14,11 @@ import (
 	"labix.org/v2/mgo/bson"
 )
 
-//Constants names of the header fields used by Rush
-const (
-	RelayerHost     = "X-Relayer-Host"
-	RelayerProtocol = "X-Relayer-Protocol"
-)
-
 //Petition is a representation from the request received. Header fields are cooked to represent
 //the final request meant to be sent to the target host. The relayer's own fields are removed
 type Petition struct {
 	ID           string      `json:"id"`
+	TraceID      string      `json:"traceid"`
 	TargetHost   string      `json:"targethost"`
 	TargetScheme string      `json:"targetscheme"`
 	Method       string      `json:"method"` // GET, POST, PUT, etc.
@@ -57,6 +52,8 @@ func newPetition(original *http.Request) (*Petition, error) {
 
 	}
 	original.Header.Del(RelayerProtocol)
+	traceID := original.Header.Get(RelayerTraceID)
+	original.Header.Del(RelayerTraceID)
 	//save body content
 	body, err := ioutil.ReadAll(original.Body)
 	if err != nil {
@@ -75,7 +72,8 @@ func newPetition(original *http.Request) (*Petition, error) {
 		RequestURI:   original.RequestURI,
 		TargetHost:   targetHost,
 		TargetScheme: scheme,
-		Created:      bson.Now()}
+		Created:      bson.Now(),
+		TraceID:      traceID}
 	return relayedRequest, nil
 }
 
