@@ -96,7 +96,6 @@ func (c *Consumer) process(petition *Petition) {
 			log.Println(petition.ID, err)
 		}
 	}
-	log.Println("inserting reply", reply.ID)
 	err = c.ReplyStore.Insert(reply)
 	if err != nil {
 		log.Println(petition.ID, err)

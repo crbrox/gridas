@@ -23,7 +23,6 @@ type Listener struct {
 
 //ServeHTTP implements HTTP handler interface
 func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println("received request", r)
 	if l.stopping {
 		http.Error(w, "Server is shutting down", 503)
 		return
@@ -41,7 +40,6 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	select {
 	case l.SendTo <- relayedRequest:
-		log.Println("enqueued petition", relayedRequest)
 		fmt.Fprintln(w, relayedRequest.ID)
 	default:
 		log.Println("server is busy", relayedRequest)
