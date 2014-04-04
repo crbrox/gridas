@@ -59,7 +59,6 @@ SERVE:
 		default:
 			select {
 			case req := <-c.GetFrom:
-				log.Println("extracting petition from queue", req.ID)
 				c.process(req)
 			case <-c.endChan:
 				break SERVE
@@ -81,7 +80,6 @@ func (c *Consumer) process(petition *Petition) {
 	if err != nil {
 		log.Println(petition.ID, err)
 	} else {
-		log.Println("making petition", petition.ID)
 		resp, err = c.Client.Do(req)
 		if err != nil {
 			log.Println(petition.ID, err)
@@ -93,7 +91,6 @@ func (c *Consumer) process(petition *Petition) {
 	reply = newReply(resp, petition, err)
 	reply.Created = start
 	if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Println("inserting erroneus reply", reply.ID)
 		e := c.ErrorStore.Insert(reply)
 		if e != nil {
 			log.Println(petition.ID, err)
@@ -104,7 +101,6 @@ func (c *Consumer) process(petition *Petition) {
 	if err != nil {
 		log.Println(petition.ID, err)
 	}
-	log.Println("removing already done petition", petition.ID)
 	err = c.PetitionStore.Remove(bson.M{"id": petition.ID})
 	if err != nil {
 		log.Println(petition.ID, err)
