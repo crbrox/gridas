@@ -15,9 +15,10 @@ file for the type chosen
 package config
 
 import (
-	"gopkg.in/yaml.v1"
 	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v1"
 )
 
 //General configuration data
