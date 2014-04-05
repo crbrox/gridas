@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"labix.org/v2/mgo/bson"
+
+	"gridas/mylog"
 )
 
 //Reply represents the response from the target host
@@ -39,12 +41,16 @@ func newReply(resp *http.Response, p *Petition, e error) *Reply {
 	reply.Proto = resp.Proto
 	reply.Header = resp.Header
 	reply.Trailer = resp.Trailer
+	mylog.Debug("before reading response body", p.ID)
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		mylog.Debugf("error reading response body %v %+v", err, p)
 		reply.Error = e.Error()
 	} else {
+		mylog.Debug("after reading response body", p.ID)
 		reply.Body = body
 	}
 	reply.Done = bson.Now()
+	mylog.Debugf("reply done %+v", reply)
 	return reply
 }

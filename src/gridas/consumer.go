@@ -1,12 +1,13 @@
 package gridas
 
 import (
-	"log"
 	"net/http"
 	"sync"
 
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+
+	"gridas/mylog"
 )
 
 //Consumer is in charge of taking up petitions from the "GetFrom" channel and
@@ -34,6 +35,7 @@ type Consumer struct {
 //Start starts n goroutines for taking Petitions from the GetFrom channel.
 //It returns a channel for notifying when the consumer has ended (hopefully after a Stop() method invocation).
 func (c *Consumer) Start(n int) <-chan bool {
+	mylog.Debugf("starting consumer %+v", c)
 	c.n = n
 	finalDone := make(chan bool)
 	c.endChan = make(chan struct{})
@@ -43,7 +45,9 @@ func (c *Consumer) Start(n int) <-chan bool {
 	}
 	go func() {
 		c.wg.Wait()
+		mylog.Debug("consumer waiting for children")
 		finalDone <- true
+		mylog.Debug("all consumer's children finished")
 	}()
 	return finalDone
 }
@@ -59,6 +63,7 @@ SERVE:
 		default:
 			select {
 			case req := <-c.GetFrom:
+				mylog.Debugf("extracted petition %+v", req)
 				c.process(req)
 			case <-c.endChan:
 				break SERVE
@@ -76,33 +81,45 @@ func (c *Consumer) process(petition *Petition) {
 		reply *Reply
 		start = bson.Now()
 	)
+	mylog.Debugf("processing petition %+v", petition)
 	req, err := petition.Request()
 	if err != nil {
-		log.Println(petition.ID, err)
+		mylog.Alert(petition.ID, err)
 	} else {
+		mylog.Debugf("restored request %+v", req)
+		mylog.Debug("before making request", petition.ID)
 		resp, err = c.Client.Do(req)
 		if err != nil {
-			log.Println(petition.ID, err)
+			mylog.Info("error making request", petition.ID, err)
 
 		} else {
-			defer resp.Body.Close()
+			mylog.Debug("after making request", petition.ID)
+			defer func() {
+				mylog.Debug("closing response body", petition.ID)
+				resp.Body.Close()
+			}()
 		}
 	}
 	reply = newReply(resp, petition, err)
 	reply.Created = start
+	mylog.Debugf("created reply %+v", reply)
 	if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		e := c.ErrorStore.Insert(reply)
 		if e != nil {
-			log.Println(petition.ID, err)
+			mylog.Alert("ERROR inserting erroneous reply", petition.ID, err)
 		}
 	}
+	mylog.Debugf("before insert reply %+v", reply)
 	err = c.ReplyStore.Insert(reply)
+	mylog.Debugf("after insert reply %+v", reply)
 	if err != nil {
-		log.Println(petition.ID, err)
+		mylog.Alert("ERROR inserting reply", petition.ID, err)
 	}
+	mylog.Debugf("before remove petition %+v", petition)
 	err = c.PetitionStore.Remove(bson.M{"id": petition.ID})
+	mylog.Debugf("after remove petition %+v", petition)
 	if err != nil {
-		log.Println(petition.ID, err)
+		mylog.Alert("ERROR removing petition", petition.ID, err)
 	}
 
 }
@@ -110,5 +127,6 @@ func (c *Consumer) process(petition *Petition) {
 //Stop asks consumer to stop taking petitions. When the stop is complete,
 //the fact will be notified through the channel returned by the Start() method.
 func (c *Consumer) Stop() {
+	mylog.Debug("closing consumer end channel")
 	close(c.endChan)
 }

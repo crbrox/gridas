@@ -7,3 +7,5 @@ petitionscoll: peticiones
 responsescoll: respuestas
 errorscoll: errores
 instance: A
+debugmgo: false
+loglevel: debug
