@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"gridas"
 	"gridas/config"
@@ -74,6 +75,13 @@ func main() {
 			os.Exit(-1)
 		}
 	}()
+	go func() {
+		for {
+			session.Refresh()
+			time.Sleep(15 * time.Second)
+		}
+	}()
+
 	onEnd(func() {
 		mylog.Info("shutting down gridas ...")
 		l.Stop()
