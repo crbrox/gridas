@@ -1,7 +1,6 @@
 package gridas
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -82,11 +81,7 @@ func (c *Consumer) process(petition *Petition) {
 		start = bson.Now()
 	)
 
-	session := c.SessionSeed.Copy()
-	defer func() {
-		session.Close()
-	}()
-	db := session.DB(c.Cfg.Database)
+	db := c.SessionSeed.DB(c.Cfg.Database)
 	petColl := db.C(c.Cfg.Instance + c.Cfg.PetitionsColl)
 	replyColl := db.C(c.Cfg.ResponsesColl)
 	errColl := db.C(c.Cfg.ErrorsColl)
@@ -117,6 +112,7 @@ func (c *Consumer) process(petition *Petition) {
 		e := errColl.Insert(reply)
 		if e != nil {
 			mylog.Alert("ERROR inserting erroneous reply", petition.ID, err)
+			c.SessionSeed.Refresh()
 		}
 	}
 	mylog.Debugf("before insert reply %+v", reply)
@@ -124,12 +120,14 @@ func (c *Consumer) process(petition *Petition) {
 	mylog.Debugf("after insert reply %+v", reply)
 	if err != nil {
 		mylog.Alert("ERROR inserting reply", petition.ID, err)
+		c.SessionSeed.Refresh()
 	}
 	mylog.Debugf("before remove petition %+v", petition)
 	err = petColl.Remove(bson.M{"id": petition.ID})
 	mylog.Debugf("after remove petition %+v", petition)
 	if err != nil {
 		mylog.Alert("ERROR removing petition", petition.ID, err)
+		c.SessionSeed.Refresh()
 	}
 
 }

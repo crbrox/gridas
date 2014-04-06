@@ -46,9 +46,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if e != nil {
 		http.Error(w, relayedRequest.ID, 500)
 		mylog.Alert("ERROR inserting", relayedRequest.ID, e)
-		newS := l.SessionSeed.Copy()
-		l.SessionSeed.Close()
-		l.SessionSeed = newS
+		l.SessionSeed.Refresh()
 		return
 	}
 	select {
@@ -63,9 +61,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		mylog.Debugf("after remove petition", relayedRequest.ID)
 		if err != nil {
 			mylog.Alert("ERROR removing petition", relayedRequest.ID, e)
-			newS := l.SessionSeed.Copy()
-			l.SessionSeed.Close()
-			l.SessionSeed = newS
+			l.SessionSeed.Refresh()
 			return
 		}
 		return
