@@ -48,12 +48,13 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	relayedRequest.Session.SetMode(mgo.Monotonic, true)
 	db := relayedRequest.Session.DB(l.Cfg.Database)
 	petColl := db.C(l.Cfg.Instance + l.Cfg.PetitionsColl)
-
 	mylog.Debugf("petition created %+v", relayedRequest)
 	e = petColl.Insert(relayedRequest)
 	if e != nil {
 		http.Error(w, relayedRequest.ID, 500)
 		mylog.Alert("ERROR inserting", relayedRequest.ID, e)
+		relayedRequest.Session.Close()
+		relayedRequest.Session = nil
 		return
 	}
 	select {
@@ -69,6 +70,8 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			mylog.Alert("ERROR removing petition", relayedRequest.ID, e)
 		}
+		relayedRequest.Session.Close()
+		relayedRequest.Session = nil
 		return
 	}
 }
