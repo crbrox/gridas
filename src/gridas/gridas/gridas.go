@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"gridas"
 	"gridas/config"
@@ -35,6 +36,8 @@ func main() {
 		mylog.Alert(err)
 		panic(err)
 	}
+	session.SetSocketTimeout(time.Duration(cfg.Timeout) * time.Second)
+	session.SetSyncTimeout(time.Duration(cfg.Timeout) * time.Second)
 	defer func() {
 		session.Close()
 		mylog.Debugf("mongo session closed %+v", session)

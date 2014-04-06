@@ -9,4 +9,5 @@ errorscoll: errores
 instance: A_
 debugmgo: false
 loglevel: info
+timeout: 3
 
