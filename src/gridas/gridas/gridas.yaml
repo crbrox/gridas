@@ -8,4 +8,5 @@ responsescoll: respuestas
 errorscoll: errores
 instance: A
 debugmgo: false
-loglevel: debug
+loglevel: info
+
