@@ -47,9 +47,9 @@ func main() {
 
 	db := session.DB(cfg.Database)
 	mylog.Debug("mongo database", db)
-	listener := &gridas.Listener{SendTo: reqChan, Cfg: cfg, SessionSeed: session}
+	listener := &gridas.Listener{SendTo: reqChan, Cfg: cfg, SessionSeed: session.New()}
 	mylog.Debugf("listener %+v", listener)
-	consumer := &gridas.Consumer{GetFrom: reqChan, Cfg: cfg, SessionSeed: session}
+	consumer := &gridas.Consumer{GetFrom: reqChan, Cfg: cfg, SessionSeed: session.New()}
 	mylog.Debugf("consumer %+v", consumer)
 	rplyr := &gridas.Replyer{Cfg: cfg, SessionSeed: session}
 	mylog.Debugf("replyer %+v", rplyr)

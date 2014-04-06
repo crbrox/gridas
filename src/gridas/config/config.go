@@ -17,7 +17,6 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v1"
 )
@@ -47,7 +46,7 @@ type Config struct {
 	//Log level: alert, info, debug
 	LogLevel string
 	//Timeout for DB operations in seconds
-	Timeout time.Duration
+	Timeout int
 }
 
 //ReadConfig reads configuration from file with name filename.

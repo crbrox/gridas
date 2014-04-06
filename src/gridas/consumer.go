@@ -1,6 +1,7 @@
 package gridas
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -81,16 +82,11 @@ func (c *Consumer) process(petition *Petition) {
 		start = bson.Now()
 	)
 
-	if petition.Session == nil {
-		mylog.Alert("petition session is nil")
-		return
-	}
+	session := c.SessionSeed.Copy()
 	defer func() {
-		petition.Session.Close()
-		petition.Session = nil
+		session.Close()
 	}()
-
-	db := petition.Session.DB(c.Cfg.Database)
+	db := session.DB(c.Cfg.Database)
 	petColl := db.C(c.Cfg.Instance + c.Cfg.PetitionsColl)
 	replyColl := db.C(c.Cfg.ResponsesColl)
 	errColl := db.C(c.Cfg.ErrorsColl)
