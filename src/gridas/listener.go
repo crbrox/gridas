@@ -39,12 +39,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, e.Error(), 400)
 		return
 	}
-	if l.SessionSeed == nil {
-		mylog.Alert("listener session seed is nil")
-		http.Error(w, "Contact support", 500)
-		return
-	}
-	relayedRequest.Session = l.SessionSeed.New()
+	relayedRequest.Session = l.SessionSeed.Clone()
 	relayedRequest.Session.SetMode(mgo.Monotonic, true)
 	db := relayedRequest.Session.DB(l.Cfg.Database)
 	petColl := db.C(l.Cfg.Instance + l.Cfg.PetitionsColl)
