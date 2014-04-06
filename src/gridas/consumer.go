@@ -7,6 +7,7 @@ import (
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 
+	"gridas/config"
 	"gridas/mylog"
 )
 
@@ -16,12 +17,10 @@ import (
 type Consumer struct {
 	//Channel for getting petitions
 	GetFrom <-chan *Petition
-	//Store of petitions, for removing when done
-	PetitionStore *mgo.Collection
-	//Store of replies, for saving responses
-	ReplyStore *mgo.Collection
-	//Store of replies with error, including not 200 status code
-	ErrorStore *mgo.Collection
+	//Configuration object
+	Cfg *config.Config
+	//Session seed for mongo
+	SessionSeed *mgo.Session
 	//http.Client for making requests to target host
 	Client http.Client
 	//number of goroutines consuming petitions
@@ -81,6 +80,21 @@ func (c *Consumer) process(petition *Petition) {
 		reply *Reply
 		start = bson.Now()
 	)
+
+	if petition.Session == nil {
+		mylog.Alert("petition session is nil")
+		return
+	}
+	defer func() {
+		petition.Session.Close()
+		petition.Session = nil
+	}()
+
+	db := petition.Session.DB(c.Cfg.Database)
+	petColl := db.C(c.Cfg.Instance + c.Cfg.PetitionsColl)
+	replyColl := db.C(c.Cfg.ResponsesColl)
+	errColl := db.C(c.Cfg.ErrorsColl)
+
 	mylog.Debugf("processing petition %+v", petition)
 	req, err := petition.Request()
 	if err != nil {
@@ -104,19 +118,19 @@ func (c *Consumer) process(petition *Petition) {
 	reply.Created = start
 	mylog.Debugf("created reply %+v", reply)
 	if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		e := c.ErrorStore.Insert(reply)
+		e := errColl.Insert(reply)
 		if e != nil {
 			mylog.Alert("ERROR inserting erroneous reply", petition.ID, err)
 		}
 	}
 	mylog.Debugf("before insert reply %+v", reply)
-	err = c.ReplyStore.Insert(reply)
+	err = replyColl.Insert(reply)
 	mylog.Debugf("after insert reply %+v", reply)
 	if err != nil {
 		mylog.Alert("ERROR inserting reply", petition.ID, err)
 	}
 	mylog.Debugf("before remove petition %+v", petition)
-	err = c.PetitionStore.Remove(bson.M{"id": petition.ID})
+	err = petColl.Remove(bson.M{"id": petition.ID})
 	mylog.Debugf("after remove petition %+v", petition)
 	if err != nil {
 		mylog.Alert("ERROR removing petition", petition.ID, err)

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"gridas"
 	"gridas/config"
@@ -43,30 +42,23 @@ func main() {
 
 	mylog.Debugf("mongo session %+v", session)
 
-	// Optional. Switch the session to a monotonic behavior.
-	session.SetMode(mgo.Monotonic, true)
-	mylog.Debug("mongo session mode set to monotonic")
 	db := session.DB(cfg.Database)
 	mylog.Debug("mongo database", db)
-	l := &gridas.Listener{SendTo: reqChan, PetitionStore: db.C(cfg.Instance + cfg.PetitionsColl)}
-	mylog.Debugf("consumer %+v", l)
-	c := &gridas.Consumer{GetFrom: reqChan,
-		PetitionStore: db.C(cfg.Instance + cfg.PetitionsColl),
-		ReplyStore:    db.C(cfg.ResponsesColl),
-		ErrorStore:    db.C(cfg.ErrorsColl),
-	}
-	mylog.Debugf("listener %+v", c)
-	r := &gridas.Replyer{ReplyStore: db.C(cfg.ResponsesColl)}
-	mylog.Debugf("replyer %+v", r)
-	rcvr := &gridas.Recoverer{SendTo: reqChan, PetitionStore: db.C(cfg.Instance + cfg.PetitionsColl)}
+	listener := &gridas.Listener{SendTo: reqChan, Cfg: cfg, SessionSeed: session}
+	mylog.Debugf("listener %+v", listener)
+	consumer := &gridas.Consumer{GetFrom: reqChan, Cfg: cfg, SessionSeed: session}
+	mylog.Debugf("consumer %+v", consumer)
+	rplyr := &gridas.Replyer{Cfg: cfg, SessionSeed: session}
+	mylog.Debugf("replyer %+v", rplyr)
+	rcvr := &gridas.Recoverer{SendTo: reqChan, Cfg: cfg, SessionSeed: session}
 	mylog.Debugf("recoverer %+v", rcvr)
-	endConsumers := c.Start(cfg.Consumers)
+	endConsumers := consumer.Start(cfg.Consumers)
 	if err := rcvr.Recover(); err != nil {
 		mylog.Alert(err)
 		os.Exit(-1)
 	}
-	http.Handle("/", l)
-	http.Handle("/responses/", http.StripPrefix("/responses/", r))
+	http.Handle("/", listener)
+	http.Handle("/responses/", http.StripPrefix("/responses/", rplyr))
 	go func() {
 		mylog.Debug("starting HTTP server (listener)")
 		err := http.ListenAndServe(":"+cfg.Port, nil)
@@ -75,18 +67,12 @@ func main() {
 			os.Exit(-1)
 		}
 	}()
-	go func() {
-		for {
-			session.Refresh()
-			time.Sleep(15 * time.Second)
-		}
-	}()
 
 	onEnd(func() {
 		mylog.Info("shutting down gridas ...")
-		l.Stop()
+		listener.Stop()
 		mylog.Debug("listener stopped")
-		c.Stop()
+		consumer.Stop()
 		mylog.Debug("consumer stopped")
 	})
 	<-endConsumers

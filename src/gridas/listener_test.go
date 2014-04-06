@@ -24,10 +24,7 @@ func do(request *http.Request, listener *Listener) *httptest.ResponseRecorder {
 
 func doRequest(request *http.Request, t *testing.T) (*httptest.ResponseRecorder, *Listener) {
 	channel := make(chan *Petition, 1000)
-	listener := &Listener{
-		SendTo:        channel,
-		PetitionStore: petitionStoreTest,
-	}
+	listener := &Listener{SendTo: channel, Cfg: cfgTest, SessionSeed: sessionTest}
 	response := do(request, listener)
 	return response, listener
 }
@@ -97,7 +94,11 @@ func TestListener(t *testing.T) {
 		}
 		var id = strings.TrimSpace(response.Body.String())
 		var pet = Petition{}
-		err = l.PetitionStore.Find(bson.M{"id": id}).One(&pet)
+
+		//Hoping no problem for non-strong mode
+		db := sessionTest.DB(l.Cfg.Database)
+		petColl := db.C(cfgTest.Instance + cfgTest.PetitionsColl)
+		err = petColl.Find(bson.M{"id": id}).One(&pet)
 		if err != nil {
 			t.Fatalf("petition should be stored with returned ID, method %q id %q err %v", method, id, err)
 		}
@@ -120,10 +121,7 @@ func TestListener(t *testing.T) {
 func TestListenerStop(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
-	var listener = &Listener{
-		SendTo:        make(chan *Petition, 1000),
-		PetitionStore: petitionStoreTest,
-	}
+	var listener = &Listener{SendTo: make(chan *Petition, 1000), Cfg: cfgTest, SessionSeed: sessionTest}
 	listener.Stop()
 	var response = doAny(listener, t)
 	if response.Code != 503 {
@@ -134,9 +132,8 @@ func TestListenerFullQueue(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
 	var listener = &Listener{
-		SendTo:        make(chan *Petition), //not buffered, would block with first petition, simulate full queue
-		PetitionStore: petitionStoreTest,
-	}
+		SendTo: make(chan *Petition), //not buffered, would block with first petition, simulate full queue
+		Cfg:    cfgTest, SessionSeed: sessionTest}
 	var response = doAny(listener, t)
 	if response.Code != 500 {
 		t.Errorf("Listener with full queue should return 500 code, not %d", response.Code)

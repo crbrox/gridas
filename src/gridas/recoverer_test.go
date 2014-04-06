@@ -7,12 +7,17 @@ import (
 	"reflect"
 	"testing"
 
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 )
 
 func TestRecoverer(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
+
+	session := sessionTest.New()
+	session.SetMode(mgo.Strong, true)
+	defer session.Close()
 
 	url1, _ := url.Parse("http://golang.org/pkg/net/http/#NewRequest")
 	url2, _ := url.Parse("https://www.google.es")
@@ -45,15 +50,14 @@ func TestRecoverer(t *testing.T) {
 	var petitions = []*Petition{p1, p2}
 	petCh := make(chan *Petition, 1000)
 	for _, p := range petitions {
-		e := petitionStoreTest.Insert(p)
+		db := session.DB(cfgTest.Database)
+		petColl := db.C(cfgTest.Instance + cfgTest.PetitionsColl)
+		e := petColl.Insert(p)
 		if e != nil {
 			t.Fatal(e)
 		}
 	}
-	recoverer := &Recoverer{
-		SendTo:        petCh,
-		PetitionStore: petitionStoreTest,
-	}
+	recoverer := &Recoverer{SendTo: petCh, SessionSeed: session, Cfg: cfgTest}
 	err := recoverer.Recover()
 	if err != nil {
 		t.Fatal(err)
@@ -74,6 +78,8 @@ func TestRecoverer(t *testing.T) {
 			default:
 				t.Fatalf("unknown enqueued petition id %q", ep.ID)
 			}
+			//session field is not meaningful for comparison
+			ep.Session = nil
 			if !reflect.DeepEqual(ep, sp) {
 				t.Fatalf("enqued petition is not equal to stored petition %#v %#v", ep, sp)
 			}

@@ -11,6 +11,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 
 	"gridas/mylog"
@@ -19,21 +20,22 @@ import (
 //Petition is a representation from the request received. Header fields are cooked to represent
 //the final request meant to be sent to the target host. The relayer's own fields are removed
 type Petition struct {
-	ID           string      `json:"id"`
-	TraceID      string      `json:"traceid"`
-	TargetHost   string      `json:"targethost"`
-	TargetScheme string      `json:"targetscheme"`
-	Method       string      `json:"method"` // GET, POST, PUT, etc.
-	URL          *url.URL    `json:"-"`
-	URLString    string      `json:"urlstring"`
-	Proto        string      `json:"proto"` // "HTTP/1.0"
-	Header       http.Header `json:"header"`
-	Trailer      http.Header `json:"trailer"`
-	Body         []byte      `json:"body"`
-	RemoteAddr   string      `json:"remoteaddr"`
-	RequestURI   string      `json:"requesturi"`
-	Host         string      `json:"host"`
-	Created      time.Time   `json:"created"`
+	ID           string       `json:"id"`
+	TraceID      string       `json:"traceid"`
+	TargetHost   string       `json:"targethost"`
+	TargetScheme string       `json:"targetscheme"`
+	Method       string       `json:"method"` // GET, POST, PUT, etc.
+	URL          *url.URL     `json:"-"`
+	URLString    string       `json:"urlstring"`
+	Proto        string       `json:"proto"` // "HTTP/1.0"
+	Header       http.Header  `json:"header"`
+	Trailer      http.Header  `json:"trailer"`
+	Body         []byte       `json:"body"`
+	RemoteAddr   string       `json:"remoteaddr"`
+	RequestURI   string       `json:"requesturi"`
+	Host         string       `json:"host"`
+	Created      time.Time    `json:"created"`
+	Session      *mgo.Session `json:,omit`
 }
 
 //newPetition creates a petition from an http.Request. It checks header fields and make necessary transformations.

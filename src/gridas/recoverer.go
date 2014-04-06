@@ -3,13 +3,17 @@ package gridas
 import (
 	"labix.org/v2/mgo"
 
+	"gridas/config"
 	"gridas/mylog"
 )
 
 //Recoverer takes the petitions stored in PetitionStore and enqueues them again into SendTo.
 type Recoverer struct {
-	SendTo        chan<- *Petition
-	PetitionStore *mgo.Collection
+	SendTo chan<- *Petition
+	//Configuration object
+	Cfg *config.Config
+	//Session seed for mongo
+	SessionSeed *mgo.Session
 }
 
 //Recover gets all the petitions stored and sends them to a channel for processing by a consumer.
@@ -18,11 +22,15 @@ type Recoverer struct {
 //should not be a problem. A Consumer can be started before with the same PetitionStore to avoid overflowing the queue.
 func (r *Recoverer) Recover() error {
 	mylog.Debug("begin recoverer")
+	db := r.SessionSeed.DB(r.Cfg.Database)
+	petColl := db.C(r.Cfg.Instance + r.Cfg.PetitionsColl)
 	p := Petition{}
-	iter := r.PetitionStore.Find(nil).Iter()
+	iter := petColl.Find(nil).Iter()
 	for iter.Next(&p) {
 		paux := Petition{}
 		paux = p
+		paux.Session = r.SessionSeed.New()
+		paux.Session.SetMode(mgo.Monotonic, true)
 		mylog.Debugf("re-enqueue petition %+v", paux)
 		r.SendTo <- &paux
 	}

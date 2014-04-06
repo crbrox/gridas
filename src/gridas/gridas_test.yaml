@@ -2,10 +2,10 @@ port: 8080
 queuesize: 100000
 consumers: 2000
 mongo: localhost
-database: testtest
+database: gridas_test
 petitionscoll: peticiones
 responsescoll: respuestas
 errorscoll: errores
-instance: A
+instance: Test_
 debugmgo: false
 loglevel: debug

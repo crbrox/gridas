@@ -7,6 +7,7 @@ import (
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 
+	"gridas/config"
 	"gridas/mylog"
 )
 
@@ -16,10 +17,12 @@ import (
 type Listener struct {
 	//Channel for sending petitions
 	SendTo chan<- *Petition
-	//Store for saving petitions in case of crash
-	PetitionStore *mgo.Collection
+	//Configuration object
+	Cfg *config.Config
 	//Flag signaling listener should finish
 	stopping bool
+	//Session seed for mongo
+	SessionSeed *mgo.Session
 }
 
 //ServeHTTP implements HTTP handler interface
@@ -36,8 +39,18 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, e.Error(), 400)
 		return
 	}
+	if l.SessionSeed == nil {
+		mylog.Alert("listener session seed is nil")
+		http.Error(w, "Contact support", 500)
+		return
+	}
+	relayedRequest.Session = l.SessionSeed.New()
+	relayedRequest.Session.SetMode(mgo.Monotonic, true)
+	db := relayedRequest.Session.DB(l.Cfg.Database)
+	petColl := db.C(l.Cfg.Instance + l.Cfg.PetitionsColl)
+
 	mylog.Debugf("petition created %+v", relayedRequest)
-	e = l.PetitionStore.Insert(relayedRequest)
+	e = petColl.Insert(relayedRequest)
 	if e != nil {
 		http.Error(w, relayedRequest.ID, 500)
 		mylog.Alert("ERROR inserting", relayedRequest.ID, e)
@@ -51,7 +64,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		mylog.Alert("server is busy")
 		http.Error(w, "Server is busy", 500)
 		mylog.Debugf("before remove petition", relayedRequest.ID)
-		err := l.PetitionStore.Remove(bson.M{"id": relayedRequest.ID})
+		err := petColl.Remove(bson.M{"id": relayedRequest.ID})
 		mylog.Debugf("after remove petition", relayedRequest.ID)
 		if err != nil {
 			mylog.Alert("ERROR removing petition", relayedRequest.ID, e)
