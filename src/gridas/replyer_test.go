@@ -26,10 +26,13 @@ func TestReplyer(t *testing.T) {
 		Created:    bson.Now(),
 	}
 
-	replyer := &Replyer{
-		ReplyStore: responseStoreTest,
+	replyer := &Replyer{Cfg: cfgTest, SessionSeed: sessionTest}
+	db := sessionTest.DB(cfgTest.Database)
+	respColl := db.C(cfgTest.ResponsesColl)
+	respColl.Insert(obj)
+	if err := sessionTest.Fsync(false); err != nil {
+		t.Fatal(err)
 	}
-	replyer.ReplyStore.Insert(obj)
 	request, err := http.NewRequest("GET", "/one/two/three/"+obj.ID, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -41,12 +44,12 @@ func TestReplyer(t *testing.T) {
 	}
 
 	if contentType := response.Header().Get("Content-Type"); contentType != "application/json" {
-		t.Error("content type of response should be application/json. It is %s", contentType)
+		t.Errorf("content type of response should be \"application/json\". It is %q", contentType)
 	}
 	var objR = Reply{}
 	err = json.Unmarshal(response.Body.Bytes(), &objR)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("%v : %q", err, response.Body.Bytes())
 	}
 	if !reflect.DeepEqual(obj, objR) {
 		t.Error("response body should be equal to body reply %#v %#v", obj, objR)
@@ -58,9 +61,7 @@ func TestReplyerNotFound(t *testing.T) {
 	defer tearDown(t)
 
 	const id = "1234_abc"
-	replyer := &Replyer{
-		ReplyStore: responseStoreTest,
-	}
+	replyer := &Replyer{Cfg: cfgTest, SessionSeed: sessionTest}
 	request, err := http.NewRequest("GET", "/one/two/three/"+id, nil)
 	if err != nil {
 		t.Fatal(err)

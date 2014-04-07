@@ -11,27 +11,31 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
+	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
+
+	"gridas/mylog"
 )
 
 //Petition is a representation from the request received. Header fields are cooked to represent
 //the final request meant to be sent to the target host. The relayer's own fields are removed
 type Petition struct {
-	ID           string      `json:"id"`
-	TraceID      string      `json:"traceid"`
-	TargetHost   string      `json:"targethost"`
-	TargetScheme string      `json:"targetscheme"`
-	Method       string      `json:"method"` // GET, POST, PUT, etc.
-	URL          *url.URL    `json:"-"`
-	URLString    string      `json:"urlstring"`
-	Proto        string      `json:"proto"` // "HTTP/1.0"
-	Header       http.Header `json:"header"`
-	Trailer      http.Header `json:"trailer"`
-	Body         []byte      `json:"body"`
-	RemoteAddr   string      `json:"remoteaddr"`
-	RequestURI   string      `json:"requesturi"`
-	Host         string      `json:"host"`
-	Created      time.Time   `json:"created"`
+	ID           string       `json:"id"`
+	TraceID      string       `json:"traceid"`
+	TargetHost   string       `json:"targethost"`
+	TargetScheme string       `json:"targetscheme"`
+	Method       string       `json:"method"` // GET, POST, PUT, etc.
+	URL          *url.URL     `json:"-"`
+	URLString    string       `json:"urlstring"`
+	Proto        string       `json:"proto"` // "HTTP/1.0"
+	Header       http.Header  `json:"header"`
+	Trailer      http.Header  `json:"trailer"`
+	Body         []byte       `json:"body"`
+	RemoteAddr   string       `json:"remoteaddr"`
+	RequestURI   string       `json:"requesturi"`
+	Host         string       `json:"host"`
+	Created      time.Time    `json:"created"`
+	Session      *mgo.Session `json:,omit`
 }
 
 //newPetition creates a petition from an http.Request. It checks header fields and make necessary transformations.
@@ -48,7 +52,8 @@ func newPetition(original *http.Request) (*Petition, error) {
 	case "":
 		scheme = "http"
 	default:
-		return nil, fmt.Errorf("gridas: Unsupported protocol %s", scheme)
+		mylog.Debug("unsupported protocol", scheme)
+		return nil, fmt.Errorf("gridas: unsupported protocol %s", scheme)
 
 	}
 	original.Header.Del(RelayerProtocol)
@@ -57,6 +62,7 @@ func newPetition(original *http.Request) (*Petition, error) {
 	//save body content
 	body, err := ioutil.ReadAll(original.Body)
 	if err != nil {
+		mylog.Debugf("error reading body request %v %+v", err, original)
 		return nil, err
 	}
 	id := uuid.New()
@@ -88,6 +94,7 @@ func (p *Petition) Request() (*http.Request, error) {
 		p.URLString,
 		ioutil.NopCloser(bytes.NewReader(p.Body))) //Restore body as ReadCloser
 	if err != nil {
+		mylog.Debugf("error restoring request %v %+v", err, p)
 		return nil, err
 	}
 	req.Header = p.Header

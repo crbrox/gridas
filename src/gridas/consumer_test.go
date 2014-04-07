@@ -23,7 +23,7 @@ func TestConsumer(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
 
-	reqChan := make(chan *Petition, cfg.QueueSize)
+	reqChan := make(chan *Petition, cfgTest.QueueSize)
 	resultCh := make(chan *http.Request, 1)
 	errCh := make(chan error, 1)
 	consumer := newTestConsumer(reqChan)
@@ -59,6 +59,7 @@ func TestConsumer(t *testing.T) {
 		RemoteAddr:   "127.0.0.1",
 		Host:         u.Host,
 		Created:      time.Now(),
+		Session:      sessionTest.New(),
 	}
 	endCh := consumer.Start(2)
 	reqChan <- petition
@@ -88,14 +89,17 @@ func TestConsumer(t *testing.T) {
 	}
 
 	reply := Reply{}
-	err = responseStoreTest.Find(bson.M{"id": idPetition}).One(&reply)
+	db := sessionTest.DB(cfgTest.Database)
+	respColl := db.C(cfgTest.ResponsesColl)
+	petColl := db.C(cfgTest.PetitionsColl)
+	err = respColl.Find(bson.M{"id": idPetition}).One(&reply)
 	if err != nil {
 		t.Fatalf("reply should be stored %v", err)
 	}
 	if !reflect.DeepEqual(reply.Body, testBodyResponse) {
 		t.Errorf("target response body does not match %v %v", reply.Body, testBodyResponse)
 	}
-	err = petitionStoreTest.Find(bson.M{"id": idPetition}).One(&Petition{})
+	err = petColl.Find(bson.M{"id": idPetition}).One(&Petition{})
 	if err == nil {
 		t.Errorf("petition should be deleted %q", idPetition)
 	}
@@ -104,7 +108,7 @@ func TestConsumerErrorResponse(t *testing.T) {
 	setUp(t)
 	defer tearDown(t)
 
-	reqChan := make(chan *Petition, cfg.QueueSize)
+	reqChan := make(chan *Petition, cfgTest.QueueSize)
 	resultCh := make(chan *http.Request, 1)
 	consumer := newTestConsumer(reqChan)
 
@@ -131,6 +135,7 @@ func TestConsumerErrorResponse(t *testing.T) {
 		RemoteAddr:   "127.0.0.1",
 		Host:         u.Host,
 		Created:      time.Now(),
+		Session:      sessionTest.New(),
 	}
 	endCh := consumer.Start(2)
 	reqChan <- petition
@@ -149,30 +154,30 @@ func TestConsumerErrorResponse(t *testing.T) {
 	}
 
 	reply := Reply{}
-	err = responseStoreTest.Find(bson.M{"id": idPetition}).One(&reply)
+	db := sessionTest.DB(cfgTest.Database)
+	respColl := db.C(cfgTest.ResponsesColl)
+	errColl := db.C(cfgTest.ErrorsColl)
+	petColl := db.C(cfgTest.PetitionsColl)
+	err = respColl.Find(bson.M{"id": idPetition}).One(&reply)
 	if err != nil {
 		t.Fatalf("reply should be stored in petition store %v", err)
 	}
 	if reply.StatusCode != http.StatusServiceUnavailable {
 		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusServiceUnavailable)
 	}
-	err = errorStoreTest.Find(bson.M{"id": idPetition}).One(&reply)
+	err = errColl.Find(bson.M{"id": idPetition}).One(&reply)
 	if err != nil {
 		t.Fatalf("reply should be stored in errors collections %v", err)
 	}
 	if reply.StatusCode != http.StatusServiceUnavailable {
 		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusServiceUnavailable)
 	}
-	err = petitionStoreTest.Find(bson.M{"id": idPetition}).One(&Petition{})
+	err = petColl.Find(bson.M{"id": idPetition}).One(&Petition{})
 	if err == nil {
 		t.Errorf("petition should be deleted %q", idPetition)
 	}
 }
 
 func newTestConsumer(petCh chan *Petition) *Consumer {
-	return &Consumer{GetFrom: petCh,
-		PetitionStore: petitionStoreTest,
-		ReplyStore:    responseStoreTest,
-		ErrorStore:    errorStoreTest,
-	}
+	return &Consumer{GetFrom: petCh, Cfg: cfgTest, SessionSeed: sessionTest}
 }

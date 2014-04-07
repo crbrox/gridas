@@ -41,6 +41,12 @@ type Config struct {
 	ErrorsColl string
 	//Instance ID for isolating recoverers
 	Instance string
+	//Debug mgo
+	DebugMgo bool
+	//Log level: alert, info, debug
+	LogLevel string
+	//Timeout for DB operations in seconds
+	Timeout int
 }
 
 //ReadConfig reads configuration from file with name filename.
