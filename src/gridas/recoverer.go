@@ -27,8 +27,7 @@ func (r *Recoverer) Recover() error {
 	p := Petition{}
 	iter := petColl.Find(nil).Iter()
 	for iter.Next(&p) {
-		paux := Petition{}
-		paux = p
+		paux := p
 		paux.Session = r.SessionSeed.New()
 		paux.Session.SetMode(mgo.Monotonic, true)
 		mylog.Debugf("re-enqueue petition %+v", paux)
