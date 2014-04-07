@@ -39,7 +39,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, e.Error(), 400)
 		return
 	}
-	db := l.SessionSeed.Clone().DB(l.Cfg.Database)
+	db := l.SessionSeed.DB(l.Cfg.Database)
 	petColl := db.C(l.Cfg.Instance + l.Cfg.PetitionsColl)
 	mylog.Debugf("petition created %+v", relayedRequest)
 	e = petColl.Insert(relayedRequest)

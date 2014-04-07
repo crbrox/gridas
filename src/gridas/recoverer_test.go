@@ -78,8 +78,6 @@ func TestRecoverer(t *testing.T) {
 			default:
 				t.Fatalf("unknown enqueued petition id %q", ep.ID)
 			}
-			//session field is not meaningful for comparison
-			ep.Session = nil
 			if !reflect.DeepEqual(ep, sp) {
 				t.Fatalf("enqued petition is not equal to stored petition %#v %#v", ep, sp)
 			}

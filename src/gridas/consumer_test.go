@@ -59,7 +59,6 @@ func TestConsumer(t *testing.T) {
 		RemoteAddr:   "127.0.0.1",
 		Host:         u.Host,
 		Created:      time.Now(),
-		Session:      sessionTest.New(),
 	}
 	endCh := consumer.Start(2)
 	reqChan <- petition
@@ -135,7 +134,6 @@ func TestConsumerErrorResponse(t *testing.T) {
 		RemoteAddr:   "127.0.0.1",
 		Host:         u.Host,
 		Created:      time.Now(),
-		Session:      sessionTest.New(),
 	}
 	endCh := consumer.Start(2)
 	reqChan <- petition

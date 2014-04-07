@@ -11,7 +11,6 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
-	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
 
 	"gridas/mylog"
@@ -35,7 +34,6 @@ type Petition struct {
 	RequestURI   string       `json:"requesturi"`
 	Host         string       `json:"host"`
 	Created      time.Time    `json:"created"`
-	Session      *mgo.Session `json:,omit`
 }
 
 //newPetition creates a petition from an http.Request. It checks header fields and make necessary transformations.
