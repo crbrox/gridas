@@ -102,7 +102,7 @@ func (c *Consumer) process(petition *Petition) {
 			if err == nil && resp.StatusCode != 503 {
 				break
 			}
-			mylog.Debugf("retrying request: %v retries: %v retryTime: %v error: %v ", petition.ID, i, retryTime, err)
+			mylog.Debugf("retrying request %v retries %v retryTime %v error %v", petition.ID, i, retryTime, err)
 			time.Sleep(retryTime)
 			retryTime *= 2
 		}
