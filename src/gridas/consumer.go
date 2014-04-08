@@ -92,31 +92,19 @@ func (c *Consumer) process(petition *Petition) {
 	req, err := petition.Request()
 	if err != nil {
 		mylog.Alert(petition.ID, err)
-	} else {
-		mylog.Debugf("restored request %+v", req)
-		mylog.Debug("before making request", petition.ID)
-		var retryTime = 1 * time.Second
-		var retries = 3
-		for i := 0; i < retries; i++ {
-			resp, err = c.Client.Do(req)
-			if err == nil && resp.StatusCode != 503 {
-				break
-			}
-			mylog.Debugf("retrying request %v retries %v retryTime %v error %v", petition.ID, i, retryTime, err)
-			time.Sleep(retryTime)
-			retryTime *= 2
-		}
-		if err != nil {
-			mylog.Info("error making request", petition.ID, err)
-
-		} else {
-			mylog.Debug("after making request", petition.ID)
-			defer func() {
-				mylog.Debug("closing response body", petition.ID)
-				resp.Body.Close()
-			}()
-		}
+		return
 	}
+	mylog.Debugf("restored request %+v", req)
+	mylog.Debug("before making request", petition.ID)
+	resp, err = c.doRequest(req, petition.ID)
+	if err == nil {
+		mylog.Debug("after making request", petition.ID)
+		defer func() {
+			mylog.Debug("closing response body", petition.ID)
+			resp.Body.Close()
+		}()
+	}
+
 	reply = newReply(resp, petition, err)
 	reply.Created = start
 	mylog.Debugf("created reply %+v", reply)
@@ -149,4 +137,25 @@ func (c *Consumer) process(petition *Petition) {
 func (c *Consumer) Stop() {
 	mylog.Debug("closing consumer end channel")
 	close(c.endChan)
+}
+
+//doRequest do and retries the request as many times as is set, increasing the time between retries, doubling the initial time
+func (c *Consumer) doRequest(req *http.Request, petid string) (resp *http.Response, err error) {
+	resp, err = c.Client.Do(req)
+	if err == nil && resp.StatusCode != 503 { //Good, not error and non challenging response
+		return resp, nil
+	}
+	mylog.Info("error making request", petid, err)
+	var retryTime = time.Duration(c.Cfg.RetryTime) * time.Millisecond
+	var retries = c.Cfg.Retries
+	for i := 0; i < retries; i++ {
+		time.Sleep(retryTime)
+		mylog.Debugf("retrying request %v retry #%v after %v error %v", petid, i+1, retryTime, err)
+		resp, err = c.Client.Do(req)
+		if err == nil && resp.StatusCode != 503 {
+			break
+		}
+		retryTime *= 2
+	}
+	return resp, err
 }

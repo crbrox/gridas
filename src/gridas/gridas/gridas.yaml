@@ -9,5 +9,5 @@ errorscoll: errores
 instance: A_
 debugmgo: false
 loglevel: info
-timeout: 3
-
+retrytime: 1000
+retries: 3
