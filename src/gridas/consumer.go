@@ -139,7 +139,7 @@ func (c *Consumer) Stop() {
 	close(c.endChan)
 }
 
-//doRequest do and retries the request as many times as is set, increasing the time between retries, doubling the initial time
+//doRequest does and retries the request as many times as is set, increasing the time between retries, doubling the initial time
 func (c *Consumer) doRequest(req *http.Request, petid string) (resp *http.Response, err error) {
 	resp, err = c.Client.Do(req)
 	if err == nil && resp.StatusCode != 503 { //Good, not error and non challenging response
