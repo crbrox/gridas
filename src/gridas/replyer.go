@@ -21,19 +21,21 @@ type Replyer struct {
 
 func (r *Replyer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	base := filepath.Base(req.URL.Path)
-	mylog.Debug("base ", base)
+	mylog.Debug("request for response ", base)
 	session := r.SessionSeed.New()
 	defer session.Close()
 	session.SetMode(mgo.Eventual, true)
 	db := session.DB(r.Cfg.Database)
 	respColl := db.C(r.Cfg.ResponsesColl)
 	rpl := &Reply{}
+	mylog.Debug("searching response", base)
 	e := respColl.Find(bson.M{"id": base}).One(&rpl)
 	if e != nil {
 		mylog.Debug("reply not found ", base)
 		http.Error(w, e.Error(), http.StatusNotFound)
 		return
 	}
+	mylog.Debug("json marshaling response", base)
 	text, e := json.MarshalIndent(rpl, "", " ")
 	if e != nil {
 		mylog.Debug("error marshaling JSON ", base, e)
