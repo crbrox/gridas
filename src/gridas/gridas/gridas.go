@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"gridas"
 	"gridas/config"
@@ -26,8 +25,8 @@ func main() {
 	}
 	fmt.Printf("%+v\n", cfg)
 
-	//mgo.SetLogger(mylog.Logger())
-	//mgo.SetDebug(false)
+	//	mgo.SetLogger(mylog.Logger())
+	//	mgo.SetDebug(true)
 	mylog.SetLevel(cfg.LogLevel)
 	mylog.Alert("hello World!")
 	reqChan := make(chan *gridas.Petition, cfg.QueueSize)
@@ -36,8 +35,6 @@ func main() {
 		mylog.Alert(err)
 		panic(err)
 	}
-	session.SetSocketTimeout(time.Duration(cfg.Timeout) * time.Second)
-	session.SetSyncTimeout(time.Duration(cfg.Timeout) * time.Second)
 	defer func() {
 		session.Close()
 		mylog.Debugf("mongo session closed %+v", session)
