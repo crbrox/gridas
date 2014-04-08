@@ -3,6 +3,7 @@ package gridas
 import (
 	"net/http"
 	"sync"
+	"time"
 
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
@@ -48,6 +49,7 @@ func (c *Consumer) Start(n int) <-chan bool {
 		finalDone <- true
 		mylog.Debug("all consumer's children finished")
 	}()
+
 	return finalDone
 }
 
@@ -93,7 +95,17 @@ func (c *Consumer) process(petition *Petition) {
 	} else {
 		mylog.Debugf("restored request %+v", req)
 		mylog.Debug("before making request", petition.ID)
-		resp, err = c.Client.Do(req)
+		var retryTime = 1 * time.Second
+		var retries = 3
+		for i := 0; i < retries; i++ {
+			resp, err = c.Client.Do(req)
+			if err == nil && resp.StatusCode != 503 {
+				break
+			}
+			mylog.Debugf("retrying request: %v retries: %v retryTime: %v error: %v ", petition.ID, i, retryTime, err)
+			time.Sleep(retryTime)
+			retryTime *= 2
+		}
 		if err != nil {
 			mylog.Info("error making request", petition.ID, err)
 

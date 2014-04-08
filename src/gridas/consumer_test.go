@@ -113,7 +113,7 @@ func TestConsumerErrorResponse(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Log("received ", r)
-		w.WriteHeader(http.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusInternalServerError)
 		resultCh <- r
 	}))
 	defer ts.Close()
@@ -140,7 +140,7 @@ func TestConsumerErrorResponse(t *testing.T) {
 
 	select {
 	case <-resultCh:
-	case <-time.After(5 * time.Second):
+	case <-time.After(3 * time.Second):
 		t.Fatal("target server waiting too long")
 	}
 
@@ -160,15 +160,15 @@ func TestConsumerErrorResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reply should be stored in petition store %v", err)
 	}
-	if reply.StatusCode != http.StatusServiceUnavailable {
-		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusServiceUnavailable)
+	if reply.StatusCode != http.StatusInternalServerError {
+		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusInternalServerError)
 	}
 	err = errColl.Find(bson.M{"id": idPetition}).One(&reply)
 	if err != nil {
 		t.Fatalf("reply should be stored in errors collections %v", err)
 	}
-	if reply.StatusCode != http.StatusServiceUnavailable {
-		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusServiceUnavailable)
+	if reply.StatusCode != http.StatusInternalServerError {
+		t.Error("reply status code distinct to response status code %d != %d", reply.StatusCode, http.StatusInternalServerError)
 	}
 	err = petColl.Find(bson.M{"id": idPetition}).One(&Petition{})
 	if err == nil {
