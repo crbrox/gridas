@@ -145,7 +145,7 @@ func (c *Consumer) doRequest(req *http.Request, petid string) (resp *http.Respon
 	if err == nil && resp.StatusCode != 503 { //Good, not error and non challenging response
 		return resp, nil
 	}
-	mylog.Info("error making request", petid, err)
+	mylog.Debug("error making request", petid, err)
 	var retryTime = time.Duration(c.Cfg.RetryTime) * time.Millisecond
 	var retries = c.Cfg.Retries
 	for i := 0; i < retries; i++ {
