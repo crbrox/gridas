@@ -67,6 +67,20 @@ func newPetition(original *http.Request) (*Petition, error) {
 	original.Header.Del(RelayerProxy)
 	original.Header.Del(RelayerRetry)
 
+	{
+		//Hack for clients of older version
+		const HTTPS = "https://"
+		const HTTPSLen = len(HTTPS)
+		const HTTP = "http://"
+		const HTTPLen = len(HTTP)
+		if strings.HasPrefix(targetHost, HTTPS) {
+			targetHost = targetHost[HTTPSLen:]
+			scheme = "https"
+		} else if strings.HasPrefix(targetHost, HTTP) {
+			targetHost = targetHost[HTTPLen:]
+			scheme = "http"
+		}
+	}
 	//save body content
 	body, err := ioutil.ReadAll(original.Body)
 	if err != nil {
