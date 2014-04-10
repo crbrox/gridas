@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"flag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +10,12 @@ import (
 	"gridas"
 )
 
-const benchURL = "http://localhost:8080/pirri"
+func init() {
+	flag.StringVar(&benchURL, "url", "http://localhost:8080/potoclon", "URL to test against")
+	flag.Parse()
+}
+
+var benchURL = "http://localhost:8080/pirri"
 
 var OK = []byte{'O', 'K'}
 var client = http.Client{}
