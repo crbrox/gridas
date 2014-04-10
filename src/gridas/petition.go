@@ -19,21 +19,21 @@ import (
 //Petition is a representation from the request received. Header fields are cooked to represent
 //the final request meant to be sent to the target host. The relayer's own fields are removed
 type Petition struct {
-	ID           string       `json:"id"`
-	TraceID      string       `json:"traceid"`
-	TargetHost   string       `json:"targethost"`
-	TargetScheme string       `json:"targetscheme"`
-	Method       string       `json:"method"` // GET, POST, PUT, etc.
-	URL          *url.URL     `json:"-"`
-	URLString    string       `json:"urlstring"`
-	Proto        string       `json:"proto"` // "HTTP/1.0"
-	Header       http.Header  `json:"header"`
-	Trailer      http.Header  `json:"trailer"`
-	Body         []byte       `json:"body"`
-	RemoteAddr   string       `json:"remoteaddr"`
-	RequestURI   string       `json:"requesturi"`
-	Host         string       `json:"host"`
-	Created      time.Time    `json:"created"`
+	ID           string      `json:"id"`
+	TraceID      string      `json:"traceid"`
+	TargetHost   string      `json:"targethost"`
+	TargetScheme string      `json:"targetscheme"`
+	Method       string      `json:"method"` // GET, POST, PUT, etc.
+	URL          *url.URL    `json:"-"`
+	URLString    string      `json:"urlstring"`
+	Proto        string      `json:"proto"` // "HTTP/1.0"
+	Header       http.Header `json:"header"`
+	Trailer      http.Header `json:"trailer"`
+	Body         []byte      `json:"body"`
+	RemoteAddr   string      `json:"remoteaddr"`
+	RequestURI   string      `json:"requesturi"`
+	Host         string      `json:"host"`
+	Created      time.Time   `json:"created"`
 }
 
 //newPetition creates a petition from an http.Request. It checks header fields and make necessary transformations.
@@ -56,7 +56,31 @@ func newPetition(original *http.Request) (*Petition, error) {
 	}
 	original.Header.Del(RelayerProtocol)
 	traceID := original.Header.Get(RelayerTraceID)
+	if traceID == "" {
+		//Just in case an older version client using "Topic"
+		traceID = original.Header.Get(RelayerTopic)
+	}
 	original.Header.Del(RelayerTraceID)
+	original.Header.Del(RelayerTopic)
+
+	//Delete older header fields, ignore them, do nothing yet
+	original.Header.Del(RelayerProxy)
+	original.Header.Del(RelayerRetry)
+
+	{
+		//Hack for clients of older version
+		const HTTPS = "https://"
+		const HTTPSLen = len(HTTPS)
+		const HTTP = "http://"
+		const HTTPLen = len(HTTP)
+		if strings.HasPrefix(targetHost, HTTPS) {
+			targetHost = targetHost[HTTPSLen:]
+			scheme = "https"
+		} else if strings.HasPrefix(targetHost, HTTP) {
+			targetHost = targetHost[HTTPLen:]
+			scheme = "http"
+		}
+	}
 	//save body content
 	body, err := ioutil.ReadAll(original.Body)
 	if err != nil {

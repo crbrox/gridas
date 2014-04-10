@@ -9,3 +9,6 @@ errorscoll: errores
 instance: Test_
 debugmgo: false
 loglevel: debug
+retryTime: 1000
+retries: 2
+

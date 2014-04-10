@@ -28,15 +28,16 @@ type Listener struct {
 //ServeHTTP implements HTTP handler interface
 func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mylog.Debugf("received request %+v", r)
+	w.Header().Set("Content-Type", "application/json")
 	if l.stopping {
 		mylog.Debug("warning client server is stopping")
-		http.Error(w, "Server is shutting down", 503)
+		http.Error(w, `{"error":"Server is shutting down"}`, 503)
 		return
 	}
 	relayedRequest, e := newPetition(r)
 	if e != nil {
 		mylog.Debug("petition with error", e)
-		http.Error(w, e.Error(), 400)
+		http.Error(w, fmt.Sprintf(`{"error": %q }`, e), 400)
 		return
 	}
 	db := l.SessionSeed.DB(l.Cfg.Database)
@@ -44,7 +45,7 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mylog.Debugf("petition created %+v", relayedRequest)
 	e = petColl.Insert(relayedRequest)
 	if e != nil {
-		http.Error(w, relayedRequest.ID, 500)
+		http.Error(w, fmt.Sprintf(`{"error": %q, "ref":%q }`, e, relayedRequest.ID), 500)
 		mylog.Alert("ERROR inserting", relayedRequest.ID, e)
 		l.SessionSeed.Refresh()
 		return
@@ -52,10 +53,10 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	select {
 	case l.SendTo <- relayedRequest:
 		mylog.Debug("enqueued petition", relayedRequest)
-		fmt.Fprintln(w, relayedRequest.ID)
+		fmt.Fprintf(w, "{\"id\":%q}\n", relayedRequest.ID)
 	default:
 		mylog.Alert("server is busy")
-		http.Error(w, "Server is busy", 500)
+		http.Error(w, `{"error":"Server is busy"}`, 500)
 		mylog.Debugf("before remove petition", relayedRequest.ID)
 		err := petColl.Remove(bson.M{"id": relayedRequest.ID})
 		mylog.Debugf("after remove petition", relayedRequest.ID)

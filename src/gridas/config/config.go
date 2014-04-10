@@ -47,6 +47,10 @@ type Config struct {
 	LogLevel string
 	//Timeout for DB operations in seconds
 	Timeout int
+	//Initial time for retrying, in  milliseconds. The first retry will use this time
+	RetryTime int
+	//Number of retries. Each retry multiplies by two the time before retrying
+	Retries int
 }
 
 //ReadConfig reads configuration from file with name filename.

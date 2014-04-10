@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"flag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,69 +10,57 @@ import (
 	"gridas"
 )
 
-const benchURL = "http://localhost:8080/pirri"
+func init() {
+	flag.StringVar(&benchURL, "url", "http://localhost:8080/potoclon", "URL to test against")
+	flag.Parse()
+}
+
+var benchURL = "http://localhost:8080/pirri"
 
 var OK = []byte{'O', 'K'}
 var client = http.Client{}
 
-func get(url string, b *testing.B) {
+func get(url string, t *testing.T) {
 	var request, err = http.NewRequest("GET", benchURL, nil)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 	request.Header.Set(gridas.RelayerHost, url)
-	b.StartTimer()
 	resp, err := client.Do(request)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		b.Fatal(err)
+		t.Fatal(err)
 	}
 
 }
-
-func BenchmarkE2EGetUnknownHost(b *testing.B) {
+func TestE2EGetUnknownHost(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(OK)
 	}))
 	url := "askdjasjdlasjdlasjdsa"
 	defer ts.Close()
-	b.ResetTimer()
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
-		get(url, b)
-		b.StopTimer()
-	}
+	get(url, t)
 }
-func BenchmarkE2EGet(b *testing.B) {
+func TestE2EGet(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(OK)
 	}))
 	url := ts.URL[len("http://"):]
 	defer ts.Close()
-	b.ResetTimer()
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
-		get(url, b)
-		b.StopTimer()
-	}
+	get(url, t)
 }
-func BenchmarkE2ERoundGet(b *testing.B) {
-	gotCh := make(chan bool, b.N)
+func TestE2ERoundGet(t *testing.T) {
+	gotCh := make(chan bool, 1)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotCh <- true
 		w.Write(OK)
 	}))
 	url := ts.URL[len("http://"):]
 	defer ts.Close()
-	b.ResetTimer()
-	b.StopTimer()
-	for i := 0; i < b.N; i++ {
-		get(url, b)
-		<-gotCh
-		b.StopTimer()
-	}
+	get(url, t)
+	<-gotCh
 }

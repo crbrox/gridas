@@ -2,10 +2,10 @@ package gridas
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 
 	"labix.org/v2/mgo/bson"
@@ -92,7 +92,11 @@ func TestListener(t *testing.T) {
 		if len(l.SendTo) != 1 {
 			t.Errorf("valid request should be enqueued, method %q len(l.SendTo) %d", method, len(l.SendTo))
 		}
-		var id = strings.TrimSpace(response.Body.String())
+		respData := make(map[string]string)
+		if err := json.Unmarshal(response.Body.Bytes(), &respData); err != nil {
+			t.Fatal(err)
+		}
+		var id = respData["id"]
 		var pet = Petition{}
 
 		//Hoping no problem for non-strong mode
