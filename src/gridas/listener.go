@@ -3,6 +3,7 @@ package gridas
 import (
 	"fmt"
 	"net/http"
+	"sync/atomic"
 
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
@@ -20,7 +21,7 @@ type Listener struct {
 	//Configuration object
 	Cfg *config.Config
 	//Flag signaling listener should finish
-	stopping bool
+	stopping uint64
 	//Session seed for mongo
 	SessionSeed *mgo.Session
 }
@@ -29,7 +30,7 @@ type Listener struct {
 func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mylog.Debugf("received request %+v", r)
 	w.Header().Set("Content-Type", "application/json")
-	if l.stopping {
+	if l.Stopped() {
 		mylog.Debug("warning client server is stopping")
 		http.Error(w, `{"error":"Server is shutting down"}`, 503)
 		return
@@ -72,5 +73,8 @@ func (l *Listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //Stop asks listener to stop receiving petitions
 func (l *Listener) Stop() {
 	mylog.Debug("listener received stop")
-	l.stopping = true //Risky??
+	atomic.StoreUint64(&l.stopping, 1)
+}
+func (l *Listener) Stopped() bool {
+	return atomic.LoadUint64(&l.stopping) != 0
 }
