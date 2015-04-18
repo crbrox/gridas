@@ -5,14 +5,13 @@ import (
 	"log"
 	"log/syslog"
 	"os"
-	"sync"
+	"sync/atomic"
 )
 
 var (
 	dbgLog   *log.Logger
 	alertLog *syslog.Writer
-	level    int
-	mtx      sync.Mutex
+	level    int32
 )
 
 const (
@@ -30,10 +29,8 @@ func init() {
 	}
 }
 
-func SetLevelInt(lvl int) {
-	mtx.Lock()
-	defer mtx.Unlock()
-	level = lvl
+func SetLevelInt(lvl int32) {
+	atomic.StoreInt32(&level, lvl)
 }
 func SetLevel(lvl string) {
 	switch lvl {
@@ -52,27 +49,27 @@ func Logger() *log.Logger {
 }
 
 func Debugf(f string, args ...interface{}) {
-	if level >= DEBUG {
+	if atomic.LoadInt32(&level) >= DEBUG {
 		str := fmt.Sprintf(f, args...)
 		dbgLog.Output(2, str)
 	}
 }
 
 func Debug(args ...interface{}) {
-	if level >= DEBUG {
+	if atomic.LoadInt32(&level) >= DEBUG {
 		str := fmt.Sprintln(args...)
 		dbgLog.Output(2, str)
 	}
 }
 func Infof(f string, args ...interface{}) {
-	if level >= INFO {
+	if atomic.LoadInt32(&level) >= INFO {
 		str := fmt.Sprintf(f, args...)
 		dbgLog.Output(2, str)
 	}
 }
 
 func Info(args ...interface{}) {
-	if level >= INFO {
+	if atomic.LoadInt32(&level) >= INFO {
 		str := fmt.Sprintln(args...)
 		dbgLog.Output(2, str)
 	}
